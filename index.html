@@ -4,9 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Swelly — Surf & Beach Conditions</title>
+  <title>Swelly — Surf & Beach Map</title>
 
-  <!-- Leaflet map -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -19,18 +18,20 @@
 
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f4fbfd;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #eef8fa;
       color: #12343b;
     }
 
     header {
       background: #007c91;
       color: white;
-      padding: 18px 25px;
+      padding: 16px 24px;
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
+      position: relative;
+      z-index: 1000;
     }
 
     .logo {
@@ -38,146 +39,316 @@
       font-weight: bold;
     }
 
-    nav a {
-      color: white;
-      text-decoration: none;
-      margin-left: 20px;
-      font-weight: bold;
+    .tagline {
+      font-size: 14px;
+      opacity: 0.9;
     }
 
-    .hero {
-      text-align: center;
-      padding: 45px 20px 30px;
-      background: linear-gradient(#d9f7fb, #f4fbfd);
-    }
-
-    .hero h1 {
-      font-size: 42px;
-      margin-bottom: 10px;
-    }
-
-    .hero p {
-      font-size: 18px;
-    }
-
-    .search-box {
-      display: flex;
-      max-width: 650px;
-      margin: 25px auto;
-      gap: 10px;
-    }
-
-    .search-box input {
-      flex: 1;
-      padding: 15px;
-      border: 1px solid #bbb;
-      border-radius: 8px;
-      font-size: 16px;
-    }
-
-    button {
-      border: none;
-      background: #007c91;
-      color: white;
-      padding: 15px 22px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    button:hover {
-      background: #005f70;
-    }
-
-    .map-container {
-      max-width: 1200px;
-      margin: 20px auto;
-      padding: 0 20px;
+    .map-area {
+      position: relative;
+      width: 100%;
     }
 
     #map {
       width: 100%;
-      height: 550px;
-      border-radius: 15px;
-      overflow: hidden;
-      box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+      height: calc(100vh - 70px);
+      min-height: 600px;
     }
 
-    .conditions {
-      max-width: 1000px;
-      margin: 40px auto;
-      padding: 25px;
+    /* Search bar floating over map */
+
+    .search-container {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(650px, 90%);
+      z-index: 900;
+    }
+
+    .search-box {
+      display: flex;
       background: white;
-      border-radius: 15px;
-      box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+      padding: 7px;
+      border-radius: 12px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.2);
     }
 
-    .conditions h2 {
-      margin-top: 0;
+    .search-box input {
+      flex: 1;
+      border: none;
+      outline: none;
+      padding: 13px;
+      font-size: 16px;
+      border-radius: 8px;
     }
 
-    .condition-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 15px;
+    .search-box button {
+      border: none;
+      background: #007c91;
+      color: white;
+      padding: 0 20px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
     }
 
-    .condition {
-      background: #eef9fb;
-      padding: 20px;
+    .search-box button:hover {
+      background: #005f70;
+    }
+
+    /* Instructions */
+
+    .map-instructions {
+      position: absolute;
+      bottom: 25px;
+      left: 25px;
+      z-index: 900;
+      background: rgba(255,255,255,0.95);
+      padding: 14px 18px;
       border-radius: 10px;
-      text-align: center;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.18);
+      max-width: 300px;
     }
 
-    .condition strong {
+    .map-instructions strong {
       display: block;
-      font-size: 14px;
-      color: #55777d;
-      margin-bottom: 8px;
+      margin-bottom: 5px;
     }
 
-    .condition span {
-      font-size: 20px;
+    /* Popup */
+
+    .popup-content {
+      min-width: 230px;
+    }
+
+    .popup-content h3 {
+      margin-top: 0;
+      margin-bottom: 5px;
+    }
+
+    .popup-button {
+      width: 100%;
+      border: none;
+      background: #007c91;
+      color: white;
+      padding: 10px;
+      border-radius: 7px;
+      cursor: pointer;
+      margin-top: 8px;
       font-weight: bold;
     }
 
-    .report {
-      max-width: 1000px;
-      margin: 40px auto;
-      padding: 30px;
+    .popup-button:hover {
+      background: #005f70;
+    }
+
+    .delete-button {
+      background: #b23b3b;
+    }
+
+    /* Modal */
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 3000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal {
+      background: white;
+      width: min(500px, 100%);
+      max-height: 90vh;
+      overflow-y: auto;
+      border-radius: 16px;
+      padding: 25px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+
+    .modal h2 {
+      margin-top: 0;
+    }
+
+    .close {
+      float: right;
+      border: none;
+      background: none;
+      font-size: 25px;
+      cursor: pointer;
+      color: #555;
+    }
+
+    .form-group {
+      margin-bottom: 17px;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 7px;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+
+    .form-group textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .primary-button {
+      width: 100%;
+      border: none;
       background: #007c91;
       color: white;
-      border-radius: 15px;
+      padding: 13px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    /* Beach page */
+
+    .beach-page {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #eef8fa;
+      z-index: 2500;
+      overflow-y: auto;
+    }
+
+    .beach-header {
+      background: #007c91;
+      color: white;
+      padding: 18px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .back-button {
+      border: none;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      padding: 9px 14px;
+      border-radius: 7px;
+      cursor: pointer;
+      margin-bottom: 12px;
+    }
+
+    .beach-header h1 {
+      margin: 0;
+    }
+
+    .beach-location {
+      margin-top: 5px;
+      opacity: 0.9;
+    }
+
+    .beach-content {
+      max-width: 1100px;
+      margin: auto;
+      padding: 25px;
+    }
+
+    .report-button {
+      background: #007c91;
+      color: white;
+      border: none;
+      padding: 13px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-bottom: 25px;
+    }
+
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 18px;
+    }
+
+    .photo-card {
+      background: white;
+      border-radius: 13px;
+      overflow: hidden;
+      box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+    }
+
+    .photo-card img {
+      width: 100%;
+      height: 230px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .photo-info {
+      padding: 15px;
+    }
+
+    .photo-time {
+      color: #007c91;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .photo-comment {
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+
+    .empty-reports {
+      background: white;
+      border-radius: 13px;
+      padding: 40px 20px;
       text-align: center;
     }
 
-    footer {
-      margin-top: 50px;
-      padding: 30px;
-      background: #073b44;
-      color: white;
-      text-align: center;
-    }
+    /* Mobile */
 
     @media (max-width: 700px) {
+
       header {
-        flex-direction: column;
-        gap: 10px;
+        padding: 13px 17px;
       }
 
-      .hero h1 {
-        font-size: 32px;
+      .logo {
+        font-size: 25px;
       }
 
-      .search-box {
-        flex-direction: column;
+      .tagline {
+        display: none;
       }
 
       #map {
-        height: 450px;
+        height: calc(100vh - 58px);
+        min-height: 500px;
       }
 
-      .condition-grid {
+      .search-container {
+        top: 12px;
+      }
+
+      .map-instructions {
+        left: 12px;
+        bottom: 15px;
+        font-size: 13px;
+        max-width: 240px;
+      }
+
+      .photo-grid {
         grid-template-columns: 1fr;
       }
     }
@@ -186,372 +357,1093 @@
 
 <body>
 
-  <header>
-    <div class="logo">🌊 Swelly</div>
+<header>
+  <div class="logo">🌊 Swelly</div>
+  <div class="tagline">Surf smarter. Explore more.</div>
+</header>
 
-    <nav>
-      <a href="#">Home</a>
-      <a href="#map-section">Map</a>
-      <a href="#conditions">Conditions</a>
-    </nav>
-  </header>
 
-  <section class="hero">
-    <h1>Know the Swelly.</h1>
+<div class="map-area">
 
-    <p>
-      Check surf and beach conditions around the world.
-    </p>
+  <div id="map"></div>
+
+  <!-- Search -->
+
+  <div class="search-container">
 
     <div class="search-box">
+
       <input
         id="searchInput"
         type="text"
-        placeholder="Search for a beach..."
+        placeholder="Search for a beach, surf spot or city..."
+        onkeydown="if(event.key === 'Enter') searchLocation()"
       >
 
-      <button onclick="searchBeach()">
+      <button onclick="searchLocation()">
         Search
       </button>
-    </div>
-  </section>
-
-  <section class="map-container" id="map-section">
-
-    <h2>🌎 Worldwide Surf Map</h2>
-
-    <p>
-      Click a beach marker to see its conditions.
-    </p>
-
-    <div id="map"></div>
-
-  </section>
-
-  <section class="conditions" id="conditions">
-
-    <h2 id="beachName">
-      Select a beach
-    </h2>
-
-    <p id="beachLocation">
-      Click one of the markers on the map.
-    </p>
-
-    <div class="condition-grid">
-
-      <div class="condition">
-        <strong>🌊 Wave Height</strong>
-        <span id="waveHeight">—</span>
-      </div>
-
-      <div class="condition">
-        <strong>⏱ Wave Period</strong>
-        <span id="wavePeriod">—</span>
-      </div>
-
-      <div class="condition">
-        <strong>💨 Wind</strong>
-        <span id="wind">—</span>
-      </div>
-
-      <div class="condition">
-        <strong>🧭 Wind Direction</strong>
-        <span id="windDirection">—</span>
-      </div>
-
-      <div class="condition">
-        <strong>🌡 Water Temperature</strong>
-        <span id="waterTemp">—</span>
-      </div>
-
-      <div class="condition">
-        <strong>🌙 Tide</strong>
-        <span id="tide">—</span>
-      </div>
 
     </div>
 
-  </section>
+  </div>
 
-  <section class="report">
 
-    <h2>📸 What's it like right now?</h2>
+  <!-- Instructions -->
+
+  <div class="map-instructions">
+
+    <strong>📍 Create a beach</strong>
+
+    Click anywhere on the map to add a new beach or surf spot.
+
+    <br><br>
+
+    <strong>📸 View reports</strong>
+
+    Click an existing marker to see today's community photos.
+
+  </div>
+
+</div>
+
+
+<!-- Add Beach Modal -->
+
+<div class="modal-overlay" id="addBeachModal">
+
+  <div class="modal">
+
+    <button class="close" onclick="closeAddBeach()">×</button>
+
+    <h2>📍 Add a Beach</h2>
 
     <p>
-      Community beach reports are coming soon.
+      Add this location to the Swelly map so everyone can report conditions here.
     </p>
 
-    <button onclick="reportComingSoon()">
-      Report Beach Conditions
+    <div class="form-group">
+
+      <label>Beach or surf spot name</label>
+
+      <input
+        id="newBeachName"
+        type="text"
+        placeholder="Example: North Jetty"
+      >
+
+    </div>
+
+    <div class="form-group">
+
+      <label>Location</label>
+
+      <input
+        id="newBeachLocation"
+        type="text"
+        placeholder="Example: Cocoa Beach, Florida"
+      >
+
+    </div>
+
+    <button
+      class="primary-button"
+      onclick="createBeach()"
+    >
+      Add to Swelly
     </button>
 
-  </section>
+  </div>
 
-  <footer>
-
-    <p>🌊 Swelly — Surf smarter. Explore more.</p>
-
-    <p>Worldwide beach conditions in one place.</p>
-
-  </footer>
+</div>
 
 
-  <!-- Leaflet JavaScript -->
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
-  </script>
+<!-- Upload Report Modal -->
+
+<div class="modal-overlay" id="reportModal">
+
+  <div class="modal">
+
+    <button class="close" onclick="closeReport()">×</button>
+
+    <h2>📸 Report Current Conditions</h2>
+
+    <p id="reportBeachName"></p>
+
+    <div class="form-group">
+
+      <label>Photo</label>
+
+      <input
+        id="photoInput"
+        type="file"
+        accept="image/*"
+      >
+
+    </div>
+
+    <div class="form-group">
+
+      <label>What does it look like?</label>
+
+      <textarea
+        id="reportComment"
+        placeholder="Example: 3 ft waves, clean conditions, crowded..."
+      ></textarea>
+
+    </div>
+
+    <button
+      class="primary-button"
+      onclick="submitReport()"
+    >
+      Post Report
+    </button>
+
+  </div>
+
+</div>
 
 
-  <script>
+<!-- Beach Page -->
 
-    /* =========================
-       BEACH DATA
-       ========================= */
+<div class="beach-page" id="beachPage">
 
-    const beaches = [
+  <div class="beach-header">
 
-      {
-        name: "Cocoa Beach",
-        location: "Florida, USA",
-        lat: 28.3200,
-        lng: -80.6070,
-        waves: "3–4 ft",
-        period: "9 sec",
-        wind: "12 mph",
-        direction: "NE",
-        water: "82°F",
-        tide: "Rising"
-      },
+    <button
+      class="back-button"
+      onclick="closeBeachPage()"
+    >
+      ← Back to Map
+    </button>
 
-      {
-        name: "Bondi Beach",
-        location: "Sydney, Australia",
-        lat: -33.8915,
-        lng: 151.2767,
-        waves: "3–5 ft",
-        period: "10 sec",
-        wind: "15 mph",
-        direction: "SE",
-        water: "68°F",
-        tide: "Falling"
-      },
+    <h1 id="pageBeachName"></h1>
 
-      {
-        name: "Aguadilla",
-        location: "Puerto Rico",
-        lat: 18.4274,
-        lng: -67.1541,
-        waves: "2–4 ft",
-        period: "8 sec",
-        wind: "10 mph",
-        direction: "E",
-        water: "84°F",
-        tide: "Rising"
-      },
+    <div
+      class="beach-location"
+      id="pageBeachLocation"
+    ></div>
 
-      {
-        name: "Banzai Pipeline",
-        location: "Oahu, Hawaii",
-        lat: 21.6655,
-        lng: -158.0532,
-        waves: "6–8 ft",
-        period: "13 sec",
-        wind: "8 mph",
-        direction: "NE",
-        water: "79°F",
-        tide: "Falling"
-      },
-
-      {
-        name: "Snapper Rocks",
-        location: "Gold Coast, Australia",
-        lat: -28.1644,
-        lng: 153.5501,
-        waves: "4–6 ft",
-        period: "11 sec",
-        wind: "13 mph",
-        direction: "SE",
-        water: "72°F",
-        tide: "Rising"
-      },
-
-      {
-        name: "Nazaré",
-        location: "Portugal",
-        lat: 39.6029,
-        lng: -9.0702,
-        waves: "5–7 ft",
-        period: "12 sec",
-        wind: "18 mph",
-        direction: "NW",
-        water: "64°F",
-        tide: "Falling"
-      },
-
-      {
-        name: "Trestles",
-        location: "California, USA",
-        lat: 33.3828,
-        lng: -117.5897,
-        waves: "3–5 ft",
-        period: "10 sec",
-        wind: "7 mph",
-        direction: "SW",
-        water: "67°F",
-        tide: "Rising"
-      }
-
-    ];
+  </div>
 
 
-    /* =========================
-       CREATE MAP
-       ========================= */
+  <div class="beach-content">
 
-    const map = L.map("map").setView([20, 0], 2);
+    <button
+      class="report-button"
+      onclick="openReportFromPage()"
+    >
+      📸 Upload Current Photo
+    </button>
+
+    <h2>Recent Community Reports</h2>
+
+    <p>
+      Photos and reports remain visible for 3 days.
+    </p>
+
+    <div
+      id="photoGrid"
+      class="photo-grid"
+    ></div>
+
+  </div>
+
+</div>
 
 
-    /* OpenStreetMap */
-    L.tileLayer(
-      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-      {
-        maxZoom: 19,
-        attribution: "&copy; OpenStreetMap contributors"
-      }
-    ).addTo(map);
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 
-    /* =========================
-       ADD BEACH MARKERS
-       ========================= */
+<script>
 
-    beaches.forEach(function(beach) {
+/* =====================================================
+   SWELLY MAP
+   ===================================================== */
 
-      const marker = L.marker([
-        beach.lat,
-        beach.lng
-      ]).addTo(map);
+const map = L.map("map").setView([20, 0], 2);
 
-      marker.bindPopup(
-        "<strong>" +
-        beach.name +
-        "</strong><br>" +
-        beach.location +
-        "<br><br>" +
-        "<button onclick=\"selectBeach('" +
-        beach.name +
-        "')\">View Conditions</button>"
+
+L.tileLayer(
+  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap contributors"
+  }
+).addTo(map);
+
+
+/* =====================================================
+   INITIAL BEACHES
+   ===================================================== */
+
+let beaches = [
+
+  {
+    id: "cocoa-beach",
+    name: "Cocoa Beach",
+    location: "Florida, USA",
+    lat: 28.3200,
+    lng: -80.6070,
+    reports: []
+  },
+
+  {
+    id: "bondi-beach",
+    name: "Bondi Beach",
+    location: "Sydney, Australia",
+    lat: -33.8915,
+    lng: 151.2767,
+    reports: []
+  },
+
+  {
+    id: "aguadilla",
+    name: "Aguadilla",
+    location: "Puerto Rico",
+    lat: 18.4274,
+    lng: -67.1541,
+    reports: []
+  },
+
+  {
+    id: "pipeline",
+    name: "Banzai Pipeline",
+    location: "Oahu, Hawaii",
+    lat: 21.6655,
+    lng: -158.0532,
+    reports: []
+  },
+
+  {
+    id: "snapper-rocks",
+    name: "Snapper Rocks",
+    location: "Gold Coast, Australia",
+    lat: -28.1644,
+    lng: 153.5501,
+    reports: []
+  },
+
+  {
+    id: "nazare",
+    name: "Nazaré",
+    location: "Portugal",
+    lat: 39.6029,
+    lng: -9.0702,
+    reports: []
+  },
+
+  {
+    id: "trestles",
+    name: "Trestles",
+    location: "California, USA",
+    lat: 33.3828,
+    lng: -117.5897,
+    reports: []
+  }
+
+];
+
+
+let markers = {};
+
+let selectedBeach = null;
+
+
+/* =====================================================
+   ADD BEACH MARKERS
+   ===================================================== */
+
+function addBeachMarker(beach) {
+
+  const marker = L.marker([
+    beach.lat,
+    beach.lng
+  ]).addTo(map);
+
+
+  marker.bindPopup(`
+
+    <div class="popup-content">
+
+      <h3>📍 ${escapeHTML(beach.name)}</h3>
+
+      <div>
+        ${escapeHTML(beach.location)}
+      </div>
+
+      <button
+        class="popup-button"
+        onclick="openBeachPage('${beach.id}')"
+      >
+        View Beach
+      </button>
+
+      <button
+        class="popup-button"
+        onclick="openReport('${beach.id}')"
+      >
+        📸 Upload Photo
+      </button>
+
+    </div>
+
+  `);
+
+
+  markers[beach.id] = marker;
+
+}
+
+
+/* Add all initial markers */
+
+beaches.forEach(addBeachMarker);
+
+
+/* =====================================================
+   CLICK MAP TO CREATE NEW BEACH
+   ===================================================== */
+
+map.on("click", function(event) {
+
+  window.newBeachCoordinates = {
+    lat: event.latlng.lat,
+    lng: event.latlng.lng
+  };
+
+  document.getElementById("newBeachName").value = "";
+
+  document.getElementById("newBeachLocation").value = "";
+
+  document.getElementById("addBeachModal").style.display = "flex";
+
+});
+
+
+/* =====================================================
+   CREATE NEW BEACH
+   ===================================================== */
+
+function createBeach() {
+
+  const name =
+    document.getElementById("newBeachName").value.trim();
+
+  const location =
+    document.getElementById("newBeachLocation").value.trim();
+
+
+  if (!name) {
+
+    alert("Please enter a beach or surf spot name.");
+
+    return;
+
+  }
+
+
+  const beach = {
+
+    id:
+      "beach-" +
+      Date.now(),
+
+    name: name,
+
+    location:
+      location || "Location added by community",
+
+    lat:
+      window.newBeachCoordinates.lat,
+
+    lng:
+      window.newBeachCoordinates.lng,
+
+    reports: []
+
+  };
+
+
+  beaches.push(beach);
+
+  addBeachMarker(beach);
+
+  saveLocalData();
+
+  closeAddBeach();
+
+
+  map.setView(
+    [beach.lat, beach.lng],
+    12
+  );
+
+
+  markers[beach.id].openPopup();
+
+}
+
+
+/* =====================================================
+   OPEN BEACH PAGE
+   ===================================================== */
+
+function openBeachPage(id) {
+
+  const beach =
+    beaches.find(
+      item => item.id === id
+    );
+
+
+  if (!beach) return;
+
+
+  selectedBeach = beach;
+
+
+  document.getElementById("pageBeachName").textContent =
+    beach.name;
+
+
+  document.getElementById("pageBeachLocation").textContent =
+    beach.location;
+
+
+  displayReports(beach);
+
+
+  document.getElementById("beachPage").style.display =
+    "block";
+
+
+  if (markers[id]) {
+
+    markers[id].closePopup();
+
+  }
+
+}
+
+
+/* =====================================================
+   DISPLAY REPORTS
+   ===================================================== */
+
+function displayReports(beach) {
+
+  const grid =
+    document.getElementById("photoGrid");
+
+
+  grid.innerHTML = "";
+
+
+  removeExpiredReports(beach);
+
+
+  if (beach.reports.length === 0) {
+
+    grid.innerHTML = `
+
+      <div class="empty-reports">
+
+        <h3>No recent reports yet 🌊</h3>
+
+        <p>
+          Be the first person to upload a photo
+          from this beach.
+        </p>
+
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  beach.reports.forEach(report => {
+
+    const card =
+      document.createElement("div");
+
+    card.className =
+      "photo-card";
+
+
+    const img =
+      document.createElement("img");
+
+    img.src =
+      report.image;
+
+
+    const info =
+      document.createElement("div");
+
+    info.className =
+      "photo-info";
+
+
+    const date =
+      new Date(report.createdAt);
+
+
+    info.innerHTML = `
+
+      <div class="photo-time">
+
+        📸 ${formatDate(date)}
+
+      </div>
+
+      <div class="photo-comment">
+
+        ${escapeHTML(report.comment || "No comment.")}
+
+      </div>
+
+      <div style="margin-top:8px;font-size:12px;color:#777;">
+
+        Expires in ${daysRemaining(report.createdAt)} day(s)
+
+      </div>
+
+    `;
+
+
+    card.appendChild(img);
+
+    card.appendChild(info);
+
+    grid.appendChild(card);
+
+  });
+
+}
+
+
+/* =====================================================
+   OPEN REPORT
+   ===================================================== */
+
+function openReport(id) {
+
+  selectedBeach =
+    beaches.find(
+      item => item.id === id
+    );
+
+
+  if (!selectedBeach) return;
+
+
+  document.getElementById("reportBeachName").textContent =
+    selectedBeach.name;
+
+
+  document.getElementById("photoInput").value =
+    "";
+
+  document.getElementById("reportComment").value =
+    "";
+
+
+  document.getElementById("reportModal").style.display =
+    "flex";
+
+}
+
+
+/* =====================================================
+   OPEN REPORT FROM BEACH PAGE
+   ===================================================== */
+
+function openReportFromPage() {
+
+  if (!selectedBeach) return;
+
+  openReport(selectedBeach.id);
+
+}
+
+
+/* =====================================================
+   SUBMIT PHOTO REPORT
+   ===================================================== */
+
+function submitReport() {
+
+  const file =
+    document.getElementById("photoInput").files[0];
+
+
+  const comment =
+    document.getElementById("reportComment").value.trim();
+
+
+  if (!file) {
+
+    alert("Please choose a photo.");
+
+    return;
+
+  }
+
+
+  if (!selectedBeach) {
+
+    alert("Please select a beach.");
+
+    return;
+
+  }
+
+
+  const reader =
+    new FileReader();
+
+
+  reader.onload = function(event) {
+
+    const report = {
+
+      id:
+        "report-" +
+        Date.now(),
+
+      image:
+        event.target.result,
+
+      comment:
+        comment,
+
+      createdAt:
+        new Date().toISOString()
+
+    };
+
+
+    selectedBeach.reports.unshift(report);
+
+
+    saveLocalData();
+
+
+    closeReport();
+
+
+    if (
+      document.getElementById("beachPage").style.display ===
+      "block"
+    ) {
+
+      displayReports(selectedBeach);
+
+    }
+
+
+    alert(
+      "Your beach report was added!"
+    );
+
+  };
+
+
+  reader.readAsDataURL(file);
+
+}
+
+
+/* =====================================================
+   3-DAY EXPIRATION
+   ===================================================== */
+
+function removeExpiredReports(beach) {
+
+  const now =
+    Date.now();
+
+
+  const threeDays =
+    72 * 60 * 60 * 1000;
+
+
+  beach.reports =
+    beach.reports.filter(
+      report =>
+        now -
+        new Date(report.createdAt).getTime()
+        <
+        threeDays
+    );
+
+}
+
+
+/* =====================================================
+   SEARCH
+   ===================================================== */
+
+async function searchLocation() {
+
+  const query =
+    document
+      .getElementById("searchInput")
+      .value
+      .trim();
+
+
+  if (!query) {
+
+    return;
+
+  }
+
+
+  /*
+    Nominatim / OpenStreetMap geocoding.
+    This lets users search worldwide locations.
+  */
+
+  try {
+
+    const response =
+      await fetch(
+        "https://nominatim.openstreetmap.org/search?format=json&limit=5&q=" +
+        encodeURIComponent(query)
       );
+
+
+    const results =
+      await response.json();
+
+
+    if (!results.length) {
+
+      alert("Location not found.");
+
+      return;
+
+    }
+
+
+    const result =
+      results[0];
+
+
+    const lat =
+      parseFloat(result.lat);
+
+
+    const lng =
+      parseFloat(result.lon);
+
+
+    map.setView(
+      [lat, lng],
+      13
+    );
+
+
+    /*
+      If there is already a Swelly beach
+      close to the searched location,
+      open it.
+    */
+
+    let closestBeach = null;
+
+    let closestDistance = Infinity;
+
+
+    beaches.forEach(beach => {
+
+      const distance =
+        Math.sqrt(
+          Math.pow(beach.lat - lat, 2) +
+          Math.pow(beach.lng - lng, 2)
+        );
+
+
+      if (
+        distance < closestDistance
+      ) {
+
+        closestDistance =
+          distance;
+
+        closestBeach =
+          beach;
+
+      }
 
     });
 
 
-    /* =========================
-       SHOW BEACH CONDITIONS
-       ========================= */
+    if (
+      closestBeach &&
+      closestDistance < 0.05
+    ) {
 
-    function selectBeach(name) {
+      markers[
+        closestBeach.id
+      ].openPopup();
 
-      const beach = beaches.find(function(item) {
-        return item.name === name;
-      });
+    } else {
 
-      if (!beach) {
-        return;
-      }
+      /*
+        No existing Swelly pin.
+        Let user create one by clicking
+        the searched location.
+      */
 
-      document.getElementById("beachName").textContent =
-        beach.name;
+      L.popup()
+        .setLatLng([lat, lng])
+        .setContent(`
 
-      document.getElementById("beachLocation").textContent =
-        beach.location;
+          <strong>📍 ${escapeHTML(query)}</strong>
 
-      document.getElementById("waveHeight").textContent =
-        beach.waves;
+          <br><br>
 
-      document.getElementById("wavePeriod").textContent =
-        beach.period;
+          No Swelly spot here yet.
 
-      document.getElementById("wind").textContent =
-        beach.wind;
+          <br><br>
 
-      document.getElementById("windDirection").textContent =
-        beach.direction;
+          <button
+            class="popup-button"
+            onclick="createSearchLocation(${lat}, ${lng}, '${escapeHTML(query)}')"
+          >
+            Add this spot to Swelly
+          </button>
 
-      document.getElementById("waterTemp").textContent =
-        beach.water;
-
-      document.getElementById("tide").textContent =
-        beach.tide;
-
-      map.setView(
-        [beach.lat, beach.lng],
-        10
-      );
-
-      document.getElementById("conditions").scrollIntoView({
-        behavior: "smooth"
-      });
+        `)
+        .openOn(map);
 
     }
 
 
-    /* =========================
-       SEARCH
-       ========================= */
+  } catch (error) {
 
-    function searchBeach() {
+    alert(
+      "Search is temporarily unavailable."
+    );
 
-      const input =
-        document.getElementById("searchInput")
-        .value
-        .toLowerCase()
-        .trim();
+  }
 
-      if (!input) {
-        alert("Please enter a beach name.");
-        return;
-      }
+}
 
-      const beach = beaches.find(function(item) {
 
-        return (
-          item.name.toLowerCase().includes(input) ||
-          item.location.toLowerCase().includes(input)
+/* =====================================================
+   CREATE SEARCHED LOCATION
+   ===================================================== */
+
+function createSearchLocation(
+  lat,
+  lng,
+  name
+) {
+
+  window.newBeachCoordinates = {
+    lat: lat,
+    lng: lng
+  };
+
+
+  document.getElementById("newBeachName").value =
+    name;
+
+
+  document.getElementById("newBeachLocation").value =
+    "";
+
+
+  document.getElementById("addBeachModal").style.display =
+    "flex";
+
+}
+
+
+/* =====================================================
+   CLOSE MODALS
+   ===================================================== */
+
+function closeAddBeach() {
+
+  document.getElementById(
+    "addBeachModal"
+  ).style.display =
+    "none";
+
+}
+
+
+function closeReport() {
+
+  document.getElementById(
+    "reportModal"
+  ).style.display =
+    "none";
+
+}
+
+
+function closeBeachPage() {
+
+  document.getElementById(
+    "beachPage"
+  ).style.display =
+    "none";
+
+}
+
+
+/* =====================================================
+   DATE FUNCTIONS
+   ===================================================== */
+
+function formatDate(date) {
+
+  return date.toLocaleString(
+    undefined,
+    {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit"
+    }
+  );
+
+}
+
+
+function daysRemaining(createdAt) {
+
+  const threeDays =
+    72 * 60 * 60 * 1000;
+
+
+  const remaining =
+    threeDays -
+    (
+      Date.now() -
+      new Date(createdAt).getTime()
+    );
+
+
+  return Math.max(
+    0,
+    Math.ceil(
+      remaining /
+      (24 * 60 * 60 * 1000)
+    )
+  );
+
+}
+
+
+/* =====================================================
+   LOCAL STORAGE
+   ===================================================== */
+
+function saveLocalData() {
+
+  localStorage.setItem(
+    "swellyBeaches",
+    JSON.stringify(beaches)
+  );
+
+}
+
+
+function loadLocalData() {
+
+  const saved =
+    localStorage.getItem(
+      "swellyBeaches"
+    );
+
+
+  if (!saved) return;
+
+
+  try {
+
+    const savedBeaches =
+      JSON.parse(saved);
+
+
+    savedBeaches.forEach(savedBeach => {
+
+      const existing =
+        beaches.find(
+          beach =>
+            beach.id === savedBeach.id
         );
 
-      });
 
+      if (existing) {
 
-      if (!beach) {
+        existing.reports =
+          savedBeach.reports || [];
 
-        alert(
-          "Beach not found yet. Worldwide beach search is coming next!"
-        );
+      } else {
 
-        return;
+        beaches.push(savedBeach);
+
+        addBeachMarker(savedBeach);
+
       }
 
-
-      selectBeach(beach.name);
-
-    }
+    });
 
 
-    /* =========================
-       REPORT BUTTON
-       ========================= */
+  } catch (error) {
 
-    function reportComingSoon() {
+    console.log(
+      "Could not load saved Swelly data."
+    );
 
-      alert(
-        "Community beach reports are coming soon!"
-      );
+  }
 
-    }
+}
 
-  </script>
+
+/* =====================================================
+   SECURITY
+   ===================================================== */
+
+function escapeHTML(value) {
+
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+}
+
+
+/* =====================================================
+   CLEAN EXPIRED REPORTS
+   ===================================================== */
+
+beaches.forEach(
+  removeExpiredReports
+);
+
+
+/* Load saved community pins */
+
+loadLocalData();
+
+
+</script>
 
 </body>
 </html>
