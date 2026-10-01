@@ -1,1 +1,1634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <title>Swelly — Surf & Beach Conditions</title>
+
+  <meta
+    name="description"
+    content="Swelly helps you check surf, beach, wave, wind, tide, and community conditions around the world."
+  >
+
+  <!-- Leaflet map -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f4fbfc;
+      color: #12343b;
+    }
+
+    /* =========================
+       NAV
+    ========================== */
+
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+
+      background: rgba(255,255,255,0.97);
+      border-bottom: 1px solid #dceff2;
+
+      padding: 15px 6%;
+
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      backdrop-filter: blur(10px);
+    }
+
+    .logo {
+      font-size: 30px;
+      font-weight: 800;
+      color: #087f8c;
+    }
+
+    .logo span {
+      color: #f29d52;
+    }
+
+    nav a {
+      text-decoration: none;
+      color: #31565d;
+      margin-left: 25px;
+      font-weight: 600;
+    }
+
+    nav a:hover {
+      color: #087f8c;
+    }
+
+    /* =========================
+       HERO
+    ========================== */
+
+    .hero {
+      min-height: 600px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      text-align: center;
+
+      padding: 90px 6%;
+
+      background:
+        linear-gradient(
+          rgba(5,74,91,0.72),
+          rgba(4,116,132,0.55)
+        ),
+        url("https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=2000&q=85");
+
+      background-size: cover;
+      background-position: center;
+
+      color: white;
+    }
+
+    .hero-content {
+      max-width: 850px;
+    }
+
+    .hero h1 {
+      font-size: clamp(55px, 9vw, 100px);
+      line-height: 0.95;
+      margin-bottom: 20px;
+      letter-spacing: -4px;
+    }
+
+    .hero h1 span {
+      color: #ffd39f;
+    }
+
+    .hero p {
+      font-size: 22px;
+      margin-bottom: 35px;
+    }
+
+    .search-box {
+      background: white;
+      padding: 8px;
+      border-radius: 60px;
+
+      display: flex;
+
+      max-width: 700px;
+      margin: auto;
+
+      box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+    }
+
+    .search-box input {
+      flex: 1;
+
+      border: none;
+      outline: none;
+
+      padding: 18px 24px;
+
+      font-size: 17px;
+
+      border-radius: 50px;
+    }
+
+    .search-box button {
+      border: none;
+
+      background: #087f8c;
+      color: white;
+
+      padding: 0 30px;
+
+      border-radius: 50px;
+
+      font-weight: bold;
+
+      cursor: pointer;
+    }
+
+    /* =========================
+       GENERAL
+    ========================== */
+
+    section {
+      padding: 80px 6%;
+    }
+
+    .section-title {
+      text-align: center;
+      margin-bottom: 45px;
+    }
+
+    .section-title h2 {
+      font-size: 40px;
+      margin-bottom: 10px;
+    }
+
+    .section-title p {
+      color: #668086;
+      font-size: 17px;
+    }
+
+    /* =========================
+       REAL MAP
+    ========================== */
+
+    .map-section {
+      background: white;
+    }
+
+    #map {
+      width: 100%;
+      max-width: 1250px;
+      height: 600px;
+
+      margin: auto;
+
+      border-radius: 25px;
+      overflow: hidden;
+
+      box-shadow:
+        0 15px 45px rgba(8,70,80,0.15);
+
+      z-index: 1;
+    }
+
+    .map-search {
+      max-width: 1250px;
+      margin: 0 auto 20px;
+
+      display: flex;
+      gap: 10px;
+    }
+
+    .map-search input {
+      flex: 1;
+
+      padding: 15px 18px;
+
+      border: 1px solid #cce4e7;
+      border-radius: 12px;
+
+      font-size: 16px;
+      outline: none;
+    }
+
+    .map-search button {
+      padding: 0 25px;
+
+      border: none;
+      border-radius: 12px;
+
+      background: #087f8c;
+      color: white;
+
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .map-search button:hover {
+      background: #056875;
+    }
+
+    /* Leaflet popup */
+
+    .popup-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #087f8c;
+      margin-bottom: 4px;
+    }
+
+    .popup-location {
+      color: #6b8186;
+      margin-bottom: 10px;
+    }
+
+    .popup-button {
+      border: none;
+      background: #087f8c;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    /* =========================
+       BEACH CARDS
+    ========================== */
+
+    .beach-grid {
+      max-width: 1200px;
+      margin: auto;
+
+      display: grid;
+      grid-template-columns:
+        repeat(auto-fit, minmax(270px, 1fr));
+
+      gap: 25px;
+    }
+
+    .beach-card {
+      background: white;
+
+      border-radius: 20px;
+
+      overflow: hidden;
+
+      box-shadow:
+        0 8px 25px rgba(0,0,0,0.08);
+
+      transition: 0.25s;
+    }
+
+    .beach-card:hover {
+      transform: translateY(-6px);
+    }
+
+    .beach-image {
+      height: 190px;
+
+      background-size: cover;
+      background-position: center;
+    }
+
+    .cocoa {
+      background-image:
+        url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80");
+    }
+
+    .bondi {
+      background-image:
+        url("https://images.unsplash.com/photo-1520942702018-0862200e6873?auto=format&fit=crop&w=900&q=80");
+    }
+
+    .aguadilla {
+      background-image:
+        url("https://images.unsplash.com/photo-1455729552865-3658a5d39692?auto=format&fit=crop&w=900&q=80");
+    }
+
+    .beach-info {
+      padding: 22px;
+    }
+
+    .beach-info h3 {
+      font-size: 23px;
+      margin-bottom: 4px;
+    }
+
+    .location {
+      color: #71888d;
+      margin-bottom: 18px;
+    }
+
+    .condition {
+      display: flex;
+      justify-content: space-between;
+
+      border-top: 1px solid #edf3f4;
+
+      padding-top: 12px;
+      margin-top: 10px;
+    }
+
+    .condition strong {
+      color: #087f8c;
+    }
+
+    .view-button {
+      width: 100%;
+
+      margin-top: 20px;
+
+      border: none;
+
+      padding: 13px;
+
+      border-radius: 12px;
+
+      background: #087f8c;
+      color: white;
+
+      font-weight: bold;
+
+      cursor: pointer;
+    }
+
+    /* =========================
+       CONDITIONS
+    ========================== */
+
+    .conditions {
+      background: #e9f7f8;
+    }
+
+    .condition-container {
+      max-width: 1100px;
+      margin: auto;
+
+      background: white;
+
+      padding: 35px;
+
+      border-radius: 25px;
+
+      box-shadow:
+        0 10px 35px rgba(0,0,0,0.07);
+    }
+
+    .selected-beach {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      margin-bottom: 30px;
+    }
+
+    .selected-beach h3 {
+      font-size: 30px;
+    }
+
+    .status {
+      background: #dff6e8;
+      color: #237346;
+
+      padding: 8px 15px;
+
+      border-radius: 30px;
+
+      font-weight: bold;
+    }
+
+    .conditions-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(auto-fit, minmax(150px,1fr));
+
+      gap: 15px;
+    }
+
+    .condition-box {
+      background: #f5fafb;
+
+      padding: 22px;
+
+      border-radius: 16px;
+
+      text-align: center;
+    }
+
+    .condition-box .icon {
+      font-size: 28px;
+    }
+
+    .condition-box h4 {
+      color: #71888d;
+      font-size: 14px;
+      text-transform: uppercase;
+    }
+
+    .condition-box p {
+      font-size: 24px;
+      font-weight: 800;
+      color: #087f8c;
+    }
+
+    /* =========================
+       REPORTS
+    ========================== */
+
+    .reports {
+      background: white;
+    }
+
+    .report-container {
+      max-width: 1100px;
+      margin: auto;
+
+      display: grid;
+
+      grid-template-columns: 1fr 1fr;
+
+      gap: 30px;
+    }
+
+    .report-card {
+      background: #f6fbfc;
+
+      border-radius: 20px;
+
+      padding: 25px;
+    }
+
+    .report-photo {
+      height: 230px;
+
+      border-radius: 15px;
+
+      background:
+        url("https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1000&q=80");
+
+      background-size: cover;
+      background-position: center;
+
+      margin-bottom: 20px;
+    }
+
+    .report-meta {
+      color: #71888d;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .upload-area {
+      border: 2px dashed #b9dfe3;
+
+      border-radius: 18px;
+
+      padding: 45px 25px;
+
+      text-align: center;
+    }
+
+    .upload-icon {
+      font-size: 45px;
+    }
+
+    .upload-area input {
+      display: none;
+    }
+
+    .upload-button {
+      display: inline-block;
+
+      background: #087f8c;
+      color: white;
+
+      padding: 13px 22px;
+
+      border-radius: 12px;
+
+      cursor: pointer;
+
+      margin-top: 15px;
+
+      font-weight: bold;
+    }
+
+    /* =========================
+       SUPPORT
+    ========================== */
+
+    .support {
+      background:
+        linear-gradient(
+          135deg,
+          #075968,
+          #0b8a98
+        );
+
+      color: white;
+
+      text-align: center;
+    }
+
+    .support h2 {
+      font-size: 42px;
+      margin-bottom: 15px;
+    }
+
+    .support p {
+      max-width: 650px;
+
+      margin:
+        auto
+        auto
+        25px;
+
+      font-size: 18px;
+    }
+
+    .support-button {
+      display: inline-block;
+
+      background: #ffd39f;
+      color: #17464e;
+
+      padding: 15px 28px;
+
+      border-radius: 30px;
+
+      text-decoration: none;
+
+      font-weight: 800;
+    }
+
+    /* =========================
+       FOOTER
+    ========================== */
+
+    footer {
+      background: #082f37;
+
+      color: #b7d1d5;
+
+      padding: 45px 6%;
+
+      text-align: center;
+    }
+
+    .footer-logo {
+      color: white;
+      font-size: 28px;
+      font-weight: 800;
+    }
+
+    footer a {
+      color: #8dd9e0;
+
+      text-decoration: none;
+
+      margin: 0 10px;
+    }
+
+    /* =========================
+       MOBILE
+    ========================== */
+
+    @media (max-width: 700px) {
+
+      nav .nav-links {
+        display: none;
+      }
+
+      .hero {
+        padding: 70px 5%;
+      }
+
+      .hero h1 {
+        font-size: 65px;
+      }
+
+      .search-box {
+        flex-direction: column;
+        border-radius: 20px;
+      }
+
+      .search-box input {
+        width: 100%;
+      }
+
+      .search-box button {
+        padding: 15px;
+      }
+
+      section {
+        padding: 60px 5%;
+      }
+
+      #map {
+        height: 450px;
+        border-radius: 15px;
+      }
+
+      .map-search {
+        flex-direction: column;
+      }
+
+      .map-search button {
+        padding: 14px;
+      }
+
+      .report-container {
+        grid-template-columns: 1fr;
+      }
+
+      .selected-beach {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+    }
+
+  </style>
+</head>
+
+
+<body>
+
+
+  <!-- =========================
+       NAVIGATION
+  ========================== -->
+
+  <nav>
+
+    <div class="logo">
+      Swel<span>ly</span> 🌊
+    </div>
+
+    <div class="nav-links">
+
+      <a href="#map">Map</a>
+      <a href="#beaches">Beaches</a>
+      <a href="#conditions">Conditions</a>
+      <a href="#reports">Reports</a>
+      <a href="#support">Support</a>
+
+    </div>
+
+  </nav>
+
+
+  <!-- =========================
+       HERO
+  ========================== -->
+
+  <header class="hero">
+
+    <div class="hero-content">
+
+      <h1>
+        Know the <span>Swelly.</span>
+      </h1>
+
+      <p>
+        Check surf, waves, wind, tides and beach conditions
+        wherever you are in the world.
+      </p>
+
+      <div class="search-box">
+
+        <input
+          id="beachSearch"
+          type="text"
+          placeholder="Search a beach..."
+        >
+
+        <button onclick="searchBeach()">
+          Search
+        </button>
+
+      </div>
+
+    </div>
+
+  </header>
+
+
+  <!-- =========================
+       WORLD MAP
+  ========================== -->
+
+  <section class="map-section" id="map-section">
+
+    <div class="section-title">
+
+      <h2>Explore the World</h2>
+
+      <p>
+        Find beaches and surf breaks around the globe.
+      </p>
+
+    </div>
+
+
+    <div class="map-search">
+
+      <input
+        id="mapSearch"
+        type="text"
+        placeholder="Search a beach on the map..."
+      >
+
+      <button onclick="searchMapBeach()">
+        Find Beach
+      </button>
+
+    </div>
+
+
+    <!-- REAL INTERACTIVE MAP -->
+
+    <div id="map"></div>
+
+  </section>
+
+
+  <!-- =========================
+       POPULAR BEACHES
+  ========================== -->
+
+  <section id="beaches">
+
+    <div class="section-title">
+
+      <h2>Popular Beaches</h2>
+
+      <p>
+        Explore some of the world's favorite surf destinations.
+      </p>
+
+    </div>
+
+
+    <div class="beach-grid">
+
+
+      <!-- COCOA BEACH -->
+
+      <div class="beach-card">
+
+        <div class="beach-image cocoa"></div>
+
+        <div class="beach-info">
+
+          <h3>Cocoa Beach</h3>
+
+          <div class="location">
+            Florida, USA
+          </div>
+
+          <div class="condition">
+            <span>🌊 Waves</span>
+            <strong>2–3 ft</strong>
+          </div>
+
+          <div class="condition">
+            <span>💨 Wind</span>
+            <strong>10 mph</strong>
+          </div>
+
+          <div class="condition">
+            <span>🌡️ Water</span>
+            <strong>82°F</strong>
+          </div>
+
+          <button
+            class="view-button"
+            onclick="selectBeach('Cocoa Beach')"
+          >
+            View Conditions
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- BONDI -->
+
+      <div class="beach-card">
+
+        <div class="beach-image bondi"></div>
+
+        <div class="beach-info">
+
+          <h3>Bondi Beach</h3>
+
+          <div class="location">
+            Sydney, Australia
+          </div>
+
+          <div class="condition">
+            <span>🌊 Waves</span>
+            <strong>3–4 ft</strong>
+          </div>
+
+          <div class="condition">
+            <span>💨 Wind</span>
+            <strong>12 mph</strong>
+          </div>
+
+          <div class="condition">
+            <span>🌡️ Water</span>
+            <strong>68°F</strong>
+          </div>
+
+          <button
+            class="view-button"
+            onclick="selectBeach('Bondi Beach')"
+          >
+            View Conditions
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- AGUADILLA -->
+
+      <div class="beach-card">
+
+        <div class="beach-image aguadilla"></div>
+
+        <div class="beach-info">
+
+          <h3>Aguadilla</h3>
+
+          <div class="location">
+            Puerto Rico
+          </div>
+
+          <div class="condition">
+            <span>🌊 Waves</span>
+            <strong>4–5 ft</strong>
+          </div>
+
+          <div class="condition">
+            <span>💨 Wind</span>
+            <strong>8 mph</strong>
+          </div>
+
+          <div class="condition">
+            <span>🌡️ Water</span>
+            <strong>84°F</strong>
+          </div>
+
+          <button
+            class="view-button"
+            onclick="selectBeach('Aguadilla')"
+          >
+            View Conditions
+          </button>
+
+        </div>
+
+      </div>
+
+
+    </div>
+
+  </section>
+
+
+  <!-- =========================
+       CONDITIONS
+  ========================== -->
+
+  <section class="conditions" id="conditions">
+
+    <div class="section-title">
+
+      <h2>Beach Conditions</h2>
+
+      <p>
+        See the latest conditions for your selected beach.
+      </p>
+
+    </div>
+
+
+    <div class="condition-container">
+
+      <div class="selected-beach">
+
+        <div>
+
+          <h3 id="selectedBeach">
+            Cocoa Beach
+          </h3>
+
+          <p id="selectedLocation">
+            Florida, USA
+          </p>
+
+        </div>
+
+        <div class="status">
+          ● Conditions Available
+        </div>
+
+      </div>
+
+
+      <div class="conditions-grid">
+
+        <div class="condition-box">
+
+          <div class="icon">🌊</div>
+
+          <h4>Wave Height</h4>
+
+          <p id="waveHeight">
+            2–3 ft
+          </p>
+
+        </div>
+
+
+        <div class="condition-box">
+
+          <div class="icon">〰️</div>
+
+          <h4>Period</h4>
+
+          <p id="wavePeriod">
+            9 sec
+          </p>
+
+        </div>
+
+
+        <div class="condition-box">
+
+          <div class="icon">💨</div>
+
+          <h4>Wind</h4>
+
+          <p id="wind">
+            10 mph
+          </p>
+
+        </div>
+
+
+        <div class="condition-box">
+
+          <div class="icon">🧭</div>
+
+          <h4>Direction</h4>
+
+          <p id="windDirection">
+            NE
+          </p>
+
+        </div>
+
+
+        <div class="condition-box">
+
+          <div class="icon">🌡️</div>
+
+          <h4>Water</h4>
+
+          <p id="waterTemp">
+            82°F
+          </p>
+
+        </div>
+
+
+        <div class="condition-box">
+
+          <div class="icon">🌙</div>
+
+          <h4>Tide</h4>
+
+          <p id="tide">
+            Rising
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =========================
+       COMMUNITY REPORTS
+  ========================== -->
+
+  <section class="reports" id="reports">
+
+    <div class="section-title">
+
+      <h2>What Does It Look Like Right Now?</h2>
+
+      <p>
+        Share real beach photos and conditions with the Swelly community.
+      </p>
+
+    </div>
+
+
+    <div class="report-container">
+
+      <div class="report-card">
+
+        <div class="report-photo"></div>
+
+        <div class="report-meta">
+          📍 Cocoa Beach · Submitted today
+        </div>
+
+        <h3>
+          Clean little waves this morning 🌊
+        </h3>
+
+        <p>
+          Looks fun around sunrise. Light wind and a few
+          people out in the water.
+        </p>
+
+      </div>
+
+
+      <div class="report-card">
+
+        <div class="upload-area">
+
+          <div class="upload-icon">
+            📸
+          </div>
+
+          <h3>
+            Share what you see
+          </h3>
+
+          <p>
+            Upload a photo and tell other surfers what
+            the beach looks like right now.
+          </p>
+
+          <label
+            for="photoUpload"
+            class="upload-button"
+          >
+            Upload Photo
+          </label>
+
+          <input
+            type="file"
+            id="photoUpload"
+            accept="image/*"
+          >
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =========================
+       SUPPORT
+  ========================== -->
+
+  <section class="support" id="support">
+
+    <h2>
+      Help Keep Swelly Free 🌊
+    </h2>
+
+    <p>
+      Swelly is built to give surfers and beachgoers
+      useful information without requiring a membership.
+    </p>
+
+    <a
+      href="#"
+      class="support-button"
+    >
+      Support Swelly
+    </a>
+
+  </section>
+
+
+  <!-- =========================
+       FOOTER
+  ========================== -->
+
+  <footer>
+
+    <div class="footer-logo">
+      Swelly 🌊
+    </div>
+
+    <p>
+      Surf smarter. Explore more.
+    </p>
+
+    <div>
+
+      <a href="#map-section">Map</a>
+      <a href="#beaches">Beaches</a>
+      <a href="#reports">Reports</a>
+      <a href="#support">Support</a>
+
+    </div>
+
+    <br>
+
+    <small>
+      © 2026 Swelly. Built for people who love the ocean.
+    </small>
+
+  </footer>
+
+
+  <!-- Leaflet JavaScript -->
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+  </script>
+
+
+  <script>
+
+    /* =========================
+       BEACH DATABASE
+    ========================== */
+
+    const beaches = {
+
+      "cocoa beach": {
+        name: "Cocoa Beach",
+        location: "Florida, USA",
+        lat: 28.3200,
+        lng: -80.6076,
+        waves: "2–3 ft",
+        period: "9 sec",
+        wind: "10 mph",
+        direction: "NE",
+        water: "82°F",
+        tide: "Rising"
+      },
+
+      "bondi beach": {
+        name: "Bondi Beach",
+        location: "Sydney, Australia",
+        lat: -33.8915,
+        lng: 151.2767,
+        waves: "3–4 ft",
+        period: "10 sec",
+        wind: "12 mph",
+        direction: "SE",
+        water: "68°F",
+        tide: "Falling"
+      },
+
+      "aguadilla": {
+        name: "Aguadilla",
+        location: "Puerto Rico",
+        lat: 18.4274,
+        lng: -67.1547,
+        waves: "4–5 ft",
+        period: "11 sec",
+        wind: "8 mph",
+        direction: "E",
+        water: "84°F",
+        tide: "Rising"
+      },
+
+      "pipeline": {
+        name: "Banzai Pipeline",
+        location: "Oahu, Hawaii",
+        lat: 21.6655,
+        lng: -158.0500,
+        waves: "5–7 ft",
+        period: "13 sec",
+        wind: "7 mph",
+        direction: "E",
+        water: "79°F",
+        tide: "Falling"
+      },
+
+      "snapper rocks": {
+        name: "Snapper Rocks",
+        location: "Gold Coast, Australia",
+        lat: -28.1645,
+        lng: 153.5520,
+        waves: "4–6 ft",
+        period: "12 sec",
+        wind: "9 mph",
+        direction: "NE",
+        water: "73°F",
+        tide: "Rising"
+      },
+
+      "nazare": {
+        name: "Nazaré",
+        location: "Portugal",
+        lat: 39.6029,
+        lng: -9.0702,
+        waves: "6–8 ft",
+        period: "14 sec",
+        wind: "11 mph",
+        direction: "NW",
+        water: "64°F",
+        tide: "Rising"
+      },
+
+      "trestles": {
+        name: "Trestles",
+        location: "California, USA",
+        lat: 33.3828,
+        lng: -117.5925,
+        waves: "3–5 ft",
+        period: "12 sec",
+        wind: "6 mph",
+        direction: "W",
+        water: "66°F",
+        tide: "Falling"
+      }
+
+    };
+
+
+    /* =========================
+       CREATE MAP
+    ========================== */
+
+    const map = L.map("map").setView(
+      [20, 0],
+      2
+    );
+
+
+    /* =========================
+       OPENSTREETMAP TILES
+    ========================== */
+
+    L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {
+        maxZoom: 19,
+
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      }
+    ).addTo(map);
+
+
+    /* =========================
+       ADD BEACH MARKERS
+    ========================== */
+
+    Object.values(beaches).forEach(function(beach) {
+
+      const marker =
+        L.marker([
+          beach.lat,
+          beach.lng
+        ]).addTo(map);
+
+
+      marker.bindPopup(`
+
+        <div>
+
+          <div class="popup-title">
+            ${beach.name}
+          </div>
+
+          <div class="popup-location">
+            ${beach.location}
+          </div>
+
+          <div>
+            🌊 ${beach.waves}
+          </div>
+
+          <div>
+            💨 ${beach.wind}
+          </div>
+
+          <br>
+
+          <button
+            class="popup-button"
+            onclick="selectBeach('${beach.name}')"
+          >
+            View Conditions
+          </button>
+
+        </div>
+
+      `);
+
+
+      beach.marker = marker;
+
+    });
+
+
+    /* =========================
+       SELECT BEACH
+    ========================== */
+
+    function selectBeach(beachName) {
+
+      const beachKey =
+        Object.keys(beaches).find(function(key) {
+
+          return (
+            beaches[key].name.toLowerCase() ===
+            beachName.toLowerCase()
+          );
+
+        });
+
+
+      if (!beachKey) {
+        return;
+      }
+
+
+      const beach = beaches[beachKey];
+
+
+      document.getElementById(
+        "selectedBeach"
+      ).textContent = beach.name;
+
+
+      document.getElementById(
+        "selectedLocation"
+      ).textContent = beach.location;
+
+
+      document.getElementById(
+        "waveHeight"
+      ).textContent = beach.waves;
+
+
+      document.getElementById(
+        "wavePeriod"
+      ).textContent = beach.period;
+
+
+      document.getElementById(
+        "wind"
+      ).textContent = beach.wind;
+
+
+      document.getElementById(
+        "windDirection"
+      ).textContent = beach.direction;
+
+
+      document.getElementById(
+        "waterTemp"
+      ).textContent = beach.water;
+
+
+      document.getElementById(
+        "tide"
+      ).textContent = beach.tide;
+
+
+      /* Move map to beach */
+
+      map.setView(
+        [beach.lat, beach.lng],
+        10
+      );
+
+
+      /* Open marker */
+
+      if (beach.marker) {
+        beach.marker.openPopup();
+      }
+
+
+      /* Scroll to conditions */
+
+      document.getElementById(
+        "conditions"
+      ).scrollIntoView({
+        behavior: "smooth"
+      });
+
+    }
+
+
+    /* =========================
+       HERO SEARCH
+    ========================== */
+
+    function searchBeach() {
+
+      const input =
+        document.getElementById(
+          "beachSearch"
+        );
+
+      const search =
+        input.value.trim().toLowerCase();
+
+
+      if (!search) {
+
+        alert(
+          "Type a beach name to search."
+        );
+
+        return;
+
+      }
+
+
+      const beachKey =
+        Object.keys(beaches).find(function(key) {
+
+          return (
+            key.includes(search) ||
+            beaches[key].name
+              .toLowerCase()
+              .includes(search)
+          );
+
+        });
+
+
+      if (beachKey) {
+
+        selectBeach(
+          beaches[beachKey].name
+        );
+
+      } else {
+
+        alert(
+          "That beach isn't in our demo database yet. Worldwide beach search is coming next!"
+        );
+
+      }
+
+    }
+
+
+    /* =========================
+       MAP SEARCH
+    ========================== */
+
+    function searchMapBeach() {
+
+      const input =
+        document.getElementById(
+          "mapSearch"
+        );
+
+      const search =
+        input.value.trim().toLowerCase();
+
+
+      if (!search) {
+
+        return;
+
+      }
+
+
+      const beachKey =
+        Object.keys(beaches).find(function(key) {
+
+          return (
+            key.includes(search) ||
+            beaches[key].name
+              .toLowerCase()
+              .includes(search)
+          );
+
+        });
+
+
+      if (beachKey) {
+
+        selectBeach(
+          beaches[beachKey].name
+        );
+
+      } else {
+
+        alert(
+          "We don't have that beach in the demo database yet."
+        );
+
+      }
+
+    }
+
+
+    /* =========================
+       ENTER KEY SEARCH
+    ========================== */
+
+    document
+      .getElementById("beachSearch")
+      .addEventListener(
+        "keypress",
+        function(event) {
+
+          if (event.key === "Enter") {
+
+            searchBeach();
+
+          }
+
+        }
+      );
+
+
+    document
+      .getElementById("mapSearch")
+      .addEventListener(
+        "keypress",
+        function(event) {
+
+          if (event.key === "Enter") {
+
+            searchMapBeach();
+
+          }
+
+        }
+      );
+
+
+    /* =========================
+       PHOTO UPLOAD DEMO
+    ========================== */
+
+    document
+      .getElementById("photoUpload")
+      .addEventListener(
+        "change",
+        function() {
+
+          if (this.files.length > 0) {
+
+            alert(
+              "Photo selected! Real photo storage and community reports will be connected in a later version."
+            );
+
+          }
+
+        }
+      );
+
+  </script>
+
+</body>
+</html>
